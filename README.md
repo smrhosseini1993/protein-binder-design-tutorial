@@ -32,6 +32,9 @@ Attached to the central alpha-carbon of each amino acid is a **side chain** (als
 
 The sequence of these specific side chains dictates the physical folding process of the protein. In a process driven largely by the hydrophobic effect, water-repelling side chains cluster together in the interior core of the protein to minimize their exposure to the surrounding aqueous environment, while charged and polar side chains orient themselves outward on the surface. This complex, energy-minimizing physical folding process results in the protein's final 3D shape, known as its tertiary structure. The specific 3D conformation of a protein is the direct determinant of its biological function.
 
+![1D Sequence to 3D Structure](assets/diagram_1_1.png)
+*Figure 1: The transition from a 1D data array (primary structure) to a folded 3D object (tertiary structure) driven by energy minimization.*
+
 *Analogy to Medical Imaging:* Think of the protein backbone as the geometric mesh or structural framework of an organ in a 3D reconstruction, and the side chains as the specific tissue textures, densities, or functional annotations mapped onto that mesh. Just as the spatial distribution of radiotracer uptake in a PET MPI polar map indicates functional tissue viability, the spatial distribution of chemical properties on a protein's surface determines its interaction viability.
 
 ### 1.2. The PDB (Protein Data Bank) Format
@@ -74,6 +77,9 @@ The efficacy of a binder is evaluated based on two primary biochemical metrics:
 A binder does not engulf or interact with the entirety of the target protein. Instead, it recognizes and binds to a very specific, localized surface patch on the target. This targeted patch is known as the **epitope**. 
 
 Designing a de novo binder requires generating a novel protein whose surface topography and chemical properties perfectly complement the 3D shape, electrostatic charge distribution, and hydrophobic/hydrophilic profile of the target's epitope. This is often conceptualized as a highly sophisticated, three-dimensional "lock and key" mechanism, where the designed binder is the key forged to fit a pre-existing lock.
+
+![Target and Binder Interaction](assets/diagram_1_3.png)
+*Figure 2: The lock-and-key paradigm of protein binding. The binder's paratope is engineered to perfectly complement the target's epitope.*
 
 ### 1.4. The Target: Botulinum Neurotoxin Type A (BoNT/A)
 
@@ -145,6 +151,9 @@ To understand AlphaFold, a computer scientist must look past the biology and foc
     The final stage takes the highly refined abstract representations from the Evoformer and translates them into explicit 3D Cartesian coordinates. Crucially, this module is **SE(3) equivariant**. 
     In mathematics, SE(3) refers to the Special Euclidean group in 3 dimensions—the space of all possible 3D rotations and translations. An SE(3) equivariant neural network guarantees that if you rotate or translate the input data, the output predictions will rotate or translate in the exact same way. This is a critical inductive bias for physical systems, ensuring the model understands 3D geometry independent of the coordinate system's origin.
 
+![AlphaFold Architecture](assets/diagram_2_2.png)
+*Figure 3: Simplified architecture of AlphaFold2, highlighting the Evoformer block and SE(3) Equivariant Structure Module.*
+
 AlphaFold2 proved that a deep neural network, given enough high-quality data (the PDB) and the right architectural priors (Attention and SE(3) equivariance), could implicitly learn the complex biophysics of protein folding far more accurately and millions of times faster than explicit energy calculations.
 
 ### 2.3. From Prediction to Generation: The Inverse Problem
@@ -196,6 +205,9 @@ The current state-of-the-art workflow for *de novo* binder design is highly modu
 1.  **Backbone Generation:** Generating the 3D geometric skeleton of the protein (the spatial coordinates).
 2.  **Sequence Decoding:** Determining the 1D amino acid sequence that will physically fold into that generated skeleton (the inverse folding problem).
 
+![Pipeline Overview](assets/diagram_3_overview.png)
+*Figure 4: The modern modular pipeline for de novo protein binder design.*
+
 ### 3.1. The RFdiffusion Pipeline (Backbone Generation)
 
 **RFdiffusion** (RoseTTAFold Diffusion) [2], developed by the Baker Lab, is currently the premier open-source pipeline for generating novel protein backbones. It adapts the mathematics of Denoising Diffusion Probabilistic Models (DDPMs) to the highly constrained domain of 3D molecular structures.
@@ -209,6 +221,9 @@ Therefore, RFdiffusion must operate within the constraints of 3D geometry. It de
 1.  **The Forward Process (Adding Noise):** During training, RFdiffusion takes real, stable protein structures from the PDB. It gradually adds rotational noise (sampled from isotropic Gaussian distributions on $SO(3)$) and translational noise (sampled from standard 3D Gaussians) to the residues. As $t \to T$, the structured protein backbone devolves into a random, unstructured "gas" of disconnected reference frames.
 2.  **The Reverse Process (Denoising):** The core of RFdiffusion is a neural network based on the **RoseTTAFold** architecture (a highly capable SE(3) equivariant network similar to AlphaFold). This network is trained to look at the noisy, disjointed 3D coordinates at timestep $t$ and predict the "cleaner" coordinates at timestep $t-1$. 
 3.  **Generation (Inference):** To design a new protein, we start with pure 3D noise (a random cloud of frames). We pass this noise through the trained RoseTTAFold network for $T$ timesteps (e.g., 50-200 steps). The network iteratively denoises the coordinates, enforcing physical constraints and learned structural motifs (like alpha-helices and beta-sheets) at each step. The final output at $t=0$ is a highly realistic, physically plausible protein backbone that has never existed in nature.
+
+![RFdiffusion Process](assets/diagram_3_1.png)
+*Figure 5: The Forward and Reverse processes of RFdiffusion. The reverse process is conditioned to build a binder against a specific target epitope.*
 
 **Conditioning for Binder Design (The BoNT/A Target):**
 If we just ran unconditioned RFdiffusion, it would generate a random, stable protein shape. But for your project, we need a specific tool: a binder for Botulinum neurotoxin type A (BoNT/A).
@@ -401,6 +416,9 @@ The final and most crucial step is *in silico* validation. We have 800 generated
 To do this efficiently at scale, researchers typically use **ColabFold** (a highly optimized implementation of AlphaFold) installed on their local GPU server.
 
 For each of the 800 FASTA sequences, you run ColabFold to predict the structure of the complex (Target Sequence + Designed Binder Sequence). You then run an automated Python evaluation script to calculate three critical metrics.
+
+![Validation Metrics](assets/diagram_4_5.png)
+*Figure 6: The trifecta of validation metrics used to filter computationally designed binders.*
 
 **The Trifecta of Success Metrics:**
 
