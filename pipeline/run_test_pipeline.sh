@@ -8,8 +8,8 @@
 set -e
 
 # --- Configuration ---
-TOTAL_BATCHES=1
-DESIGNS_PER_BATCH=2
+TOTAL_BATCHES=5
+DESIGNS_PER_BATCH=10
 WORKSPACE="$HOME/Desktop/protein_workspace"
 CURRENT_BATCH_DIR="$WORKSPACE/current_batch"
 COMPLETED_DIR="$WORKSPACE/completed_batches"
@@ -54,7 +54,7 @@ do
     # Step C: Sequence Selection
     # ---------------------------------------------------------
     echo "[Test Batch] Extracting best sequences..."
-    BEST_SEQ_FASTA="$CURRENT_BATCH_DIR/best_sequences_test.fasta"
+    BEST_SEQ_FASTA="$CURRENT_BATCH_DIR/best_sequences_test_batch_${BATCH}.fasta"
     python3 extract_best_seq.py --input_dir "$MPNN_OUT/seqs" --output_file "$BEST_SEQ_FASTA"
     
     # ---------------------------------------------------------
@@ -67,14 +67,14 @@ do
     # Step E: Filtering
     # ---------------------------------------------------------
     echo "[Test Batch] Filtering results..."
-    REPORT_CSV="$COMPLETED_DIR/test_report.csv"
+    REPORT_CSV="$COMPLETED_DIR/test_report_batch_${BATCH}.csv"
     python3 filter_results.py --input_dir "$COLAB_OUT" --output_csv "$REPORT_CSV"
     
     # ---------------------------------------------------------
     # Step F: Compression
     # ---------------------------------------------------------
     echo "[Test Batch] Compressing results..."
-    ARCHIVE_NAME="test_results.tar.gz"
+    ARCHIVE_NAME="test_results_batch_${BATCH}.tar.gz"
     ARCHIVE_PATH="$COMPLETED_DIR/$ARCHIVE_NAME"
     
     # Compress the entire current_batch directory
