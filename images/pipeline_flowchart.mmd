@@ -1,0 +1,48 @@
+graph TD
+    %% Define Styles
+    classDef setup fill:#e1f5fe,stroke:#3182ce,stroke-width:2px,color:#2b6cb0
+    classDef test fill:#fff3e0,stroke:#d69e2e,stroke-width:2px,color:#b7791f
+    classDef run fill:#e6fffa,stroke:#38a169,stroke-width:2px,color:#2f855a
+    classDef storage fill:#f3e8ff,stroke:#805ad5,stroke-width:2px,color:#553c9a
+    classDef cloud fill:#ebf8ff,stroke:#319795,stroke-width:2px,color:#285e61
+
+    %% Main Flow
+    subgraph Phase1 [Phase 1: Setup & Config]
+        A[Clone Repository] --> B[Run setup_models.sh]
+        B --> C[Run setup_colabfold.sh]
+        C --> D[Configure rclone for GDrive]
+    end
+    class A,B,C,D setup
+
+    subgraph Phase2 [Phase 2: End-to-End Test]
+        D --> E[Run run_test_pipeline.sh]
+        E --> F{Check GDrive for<br>test_results.tar.gz}
+        F -- Success --> G[Ready for Production]
+        F -- Failure --> H[Debug rclone/Docker]
+    end
+    class E,F,G,H test
+
+    subgraph Phase3 [Phase 3: Production Run]
+        G --> I[Run run_pipeline_batched.sh]
+        
+        subgraph BatchLoop [The Batch Loop - Runs 10 Times]
+            J[1. RFdiffusion<br>Generate 1,000 Backbones] --> K[2. ProteinMPNN<br>Design 8,000 Sequences]
+            K --> L[3. Python Script<br>Extract 1,000 Best Seqs]
+            L --> M[4. ColabFold<br>Predict 5,000 3D Structures]
+            M --> N[5. Python Script<br>Filter by pLDDT & iPAE]
+            N --> O[6. Compress Results<br>Create .tar.gz]
+            O --> P[7. rclone Docker<br>Upload to Google Drive]
+            P --> Q[8. Cleanup<br>Delete Local Files]
+        end
+        
+        I --> J
+        Q -. Loop until 10 batches done .-> J
+    end
+    class I,J,K,L,M,N,O,P,Q run
+
+    subgraph Phase4 [Phase 4: Final Output]
+        Q --> R[(Google Drive)]
+        R --> S[10 x .tar.gz Archives]
+        R --> T[10 x Filtered CSV Reports]
+    end
+    class R,S,T cloud
