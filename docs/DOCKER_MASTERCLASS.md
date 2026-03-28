@@ -45,7 +45,7 @@ Unlike Virtual Machines (VMs), which emulate an entire hardware stack and are in
 
 *(See the diagram below for a visual comparison of the architectures).*
 
-![Conventional vs Docker Architecture](docker_vs_conventional.png)
+![Conventional vs Docker Architecture](../images/docker_vs_conventional.png)
 
 ### Why this matters for Protein Design
 By using Docker, we don't have to install PyTorch, JAX, or DGL on your server at all. We simply tell Docker: *"Download the exact mini-computer that the Baker Lab used to write RFdiffusion, and run my `trimmed.pdb` file through it."* 
@@ -167,7 +167,7 @@ If we use `-v /home/ubuntu/protein-binder-design-tutorial/data:/app/data`, here 
 
 *(See the diagram below to visualize how the three containers pass data through your server's hard drive).*
 
-![Pipeline Docker Architecture](pipeline_architecture.png)
+![Pipeline Docker Architecture](../images/pipeline_architecture.png)
 
 ### Step 3: The Execution Command (`docker run`)
 In your old workflow, you would type `conda activate myenv` and then `python run_rfdiffusion.py`. 
