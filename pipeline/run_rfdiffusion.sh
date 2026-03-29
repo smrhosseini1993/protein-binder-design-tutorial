@@ -40,6 +40,7 @@ docker run --rm --gpus all \
   'ppi.hotspot_res=[A12,A13,A14,A15,A17]' \
   denoiser.noise_scale_ca=0 \
   denoiser.noise_scale_frame=0 \
+  inference.schedule_directory_path=/outputs/schedules \
   hydra.run.dir=/outputs/hydra_logs
 
 echo "RFdiffusion completed! Check the $OUTPUTS_DIR directory."
