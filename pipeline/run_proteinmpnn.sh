@@ -2,32 +2,41 @@
 # run_proteinmpnn.sh
 # Runs the ProteinMPNN Docker container to design sequences for the RFdiffusion backbones
 
-PIPELINE_DIR=$(pwd)
-INPUTS_DIR="${PIPELINE_DIR}/outputs/rfdiffusion"
-OUTPUTS_DIR="${PIPELINE_DIR}/outputs/proteinmpnn"
+INPUTS_DIR="${1:-outputs/rfdiffusion}"
+OUTPUTS_DIR="${2:-outputs/proteinmpnn}"
 
 mkdir -p "$OUTPUTS_DIR"
+ABS_INPUTS_DIR=$(realpath "$INPUTS_DIR")
+ABS_OUTPUTS_DIR=$(realpath "$OUTPUTS_DIR")
 
 echo "Starting ProteinMPNN sequence design..."
-echo "Input directory: $INPUTS_DIR"
-echo "Output directory: $OUTPUTS_DIR"
+echo "Input directory: $ABS_INPUTS_DIR"
+echo "Output directory: $ABS_OUTPUTS_DIR"
 
-# Run the Docker container
-# Note: ProteinMPNN is lightweight and can run on CPU, but we pass the GPU anyway for speed
-docker run -it --rm --gpus all \
+# Step 1: Parse PDBs into JSONL format required by ProteinMPNN
+echo "Parsing PDBs..."
+docker run --rm \
   -u $(id -u):$(id -g) \
-  -v "${INPUTS_DIR}:/inputs" \
-  -v "${OUTPUTS_DIR}:/outputs" \
+  --entrypoint python \
+  -v "${ABS_INPUTS_DIR}:/inputs" \
+  -v "${ABS_OUTPUTS_DIR}:/outputs" \
   rosettacommons/proteinmpnn:latest \
-  --pdb_path_chains "A" \
-  --out_folder "/outputs" \
-  --num_seq_per_target 2 \
+  /app/proteinmpnn/helper_scripts/parse_multiple_chains.py \
+  --input_path=/inputs \
+  --output_path=/outputs/parsed_pdbs.jsonl
+
+# Step 2: Run ProteinMPNN
+echo "Running sequence design..."
+docker run --rm --gpus all \
+  -u $(id -u):$(id -g) \
+  -v "${ABS_INPUTS_DIR}:/inputs" \
+  -v "${ABS_OUTPUTS_DIR}:/outputs" \
+  rosettacommons/proteinmpnn:latest \
+  --jsonl_path /outputs/parsed_pdbs.jsonl \
+  --out_folder /outputs \
+  --num_seq_per_target 8 \
   --sampling_temp "0.1" \
   --seed 37 \
   --batch_size 1
 
-# Note: The above command is a simplified example. 
-# For a real run, we need to parse the specific outputs from RFdiffusion.
-# A more robust script would loop through the generated PDBs.
-
-echo "ProteinMPNN completed! Check the outputs/proteinmpnn directory."
+echo "ProteinMPNN completed! Check the $OUTPUTS_DIR directory."
