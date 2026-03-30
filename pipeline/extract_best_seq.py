@@ -88,7 +88,9 @@ def main():
         if best_entry:
             # Create a clean header for ColabFold based on the filename (which is the backbone name)
             base_name = os.path.basename(filepath).replace(".fa", "")
-            clean_header = f"{base_name} | MPNN_score={best_score:.4f}"
+            # Use double underscore separator — ColabFold treats '|' as a chain separator
+            # which causes 'Invalid character in the sequence: /' errors
+            clean_header = f"{base_name}__MPNN_score_{best_score:.4f}"
             best_sequences.append((clean_header, best_entry[1]))
 
     print(f"Extracted {len(best_sequences)} best sequences.")

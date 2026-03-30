@@ -91,14 +91,15 @@ do
     RCLONE_CONFIG="$HOME/.config/rclone/rclone.conf"
     
     if [ -f "$RCLONE_CONFIG" ]; then
+        # Mount rclone.conf as read-write so rclone can refresh its token cache
         docker run --rm \
-            -v "$RCLONE_CONFIG:/config/rclone/rclone.conf" \
+            -v "$RCLONE_CONFIG:/config/rclone/rclone.conf:rw" \
             -v "$COMPLETED_DIR:/data" \
             rclone/rclone copy "/data/$ARCHIVE_NAME" "$GDRIVE_REMOTE" \
             --progress
             
         docker run --rm \
-            -v "$RCLONE_CONFIG:/config/rclone/rclone.conf" \
+            -v "$RCLONE_CONFIG:/config/rclone/rclone.conf:rw" \
             -v "$COMPLETED_DIR:/data" \
             rclone/rclone copy "/data/$(basename "$REPORT_CSV")" "$GDRIVE_REMOTE" \
             --progress
@@ -113,7 +114,11 @@ do
     # Step H: Cleanup (Crucial for storage management)
     # ---------------------------------------------------------
     echo "[Batch $BATCH] Cleaning up temporary files..."
-    rm -rf "$CURRENT_BATCH_DIR"/*
+    # ColabFold runs as root inside its container, so MSA files are root-owned.
+    # Use a lightweight alpine container (running as root) to delete them safely.
+    docker run --rm \
+        -v "$CURRENT_BATCH_DIR:/cleanup" \
+        alpine sh -c "rm -rf /cleanup/*"
     
     # If upload was successful, we can also delete the local archive to save space
     if [ -f "$RCLONE_CONFIG" ]; then
